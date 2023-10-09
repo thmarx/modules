@@ -26,17 +26,5 @@ package com.github.thmarx.modules.api;
  *
  * @author marx
  */
-public abstract class Context {
-
-	private ServiceRegistry services = null;
-	
-	public ServiceRegistry serviceRegistry() {
-		return services;
-	}
-
-	public void setServices(ServiceRegistry services) {
-		this.services = services;
-	}
-	
-	
+public interface Context {
 }

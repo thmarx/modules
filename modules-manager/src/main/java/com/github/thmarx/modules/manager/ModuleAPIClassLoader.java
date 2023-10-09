@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.SecureClassLoader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -39,9 +40,9 @@ public class ModuleAPIClassLoader extends ClassLoader {
 
 	private final List<String> apiPackages;
 
-	private final URLClassLoader parent;
+	private final ClassLoader parent;
 
-	public ModuleAPIClassLoader(URLClassLoader classLoader, List<String> apiPackages) {
+	public ModuleAPIClassLoader(ClassLoader classLoader, List<String> apiPackages) {
 		super(classLoader);
 
 		this.parent = classLoader;
@@ -140,7 +141,7 @@ public class ModuleAPIClassLoader extends ClassLoader {
 	@Override
 	protected Enumeration<URL> findResources(String name) throws IOException {
 		if (isAllowed(name)) {
-			return parent.findResources(name);
+			return parent.getResources(name);
 		}
 
 		return new Enumeration<URL>() {
@@ -161,7 +162,7 @@ public class ModuleAPIClassLoader extends ClassLoader {
 	@Override
 	protected URL findResource(String name) {
 		if (isAllowed(name)) {
-			return parent.findResource(name);
+			return parent.getResource(name);
 		}
 		return null;
 	}

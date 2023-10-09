@@ -10,6 +10,9 @@
 	<modules>
 		<module>modules-api</module>
 		<module>modules-manager</module>
+	 <module>example-api</module>
+	 <module>example-module</module>
+	 <module>example-app</module>
 	</modules>
 	<organization>
 		<name>Thorsten Marx</name>
@@ -34,11 +37,13 @@
 			<groupId>org.testng</groupId>
 			<artifactId>testng</artifactId>
 			<version>7.8.0</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.assertj</groupId>
 			<artifactId>assertj-core</artifactId>
 			<version>3.24.2</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 	
@@ -110,5 +115,8 @@
 			<url>https://maven.pkg.github.com/thmarx/modules</url>
 		</repository>
 	</distributionManagement>
-	
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
 </project>

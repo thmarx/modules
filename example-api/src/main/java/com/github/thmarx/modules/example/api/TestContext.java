@@ -1,8 +1,12 @@
-package com.github.thmarx.modules.api.services;
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package com.github.thmarx.modules.example.api;
 
 /*-
  * #%L
- * modules-api
+ * example-api
  * %%
  * Copyright (C) 2023 Thorsten Marx
  * %%
@@ -20,11 +24,12 @@ package com.github.thmarx.modules.api.services;
  * #L%
  */
 
+import com.github.thmarx.modules.api.Context;
+
 /**
  *
- * @author marx
+ * @author t.marx
  */
-public interface SimpleService {
-
-	public String getName ();
+public class TestContext implements Context {
+	
 }

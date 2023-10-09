@@ -99,6 +99,4 @@ public interface ModuleManager extends AutoCloseable {
 	 * @return 
 	 */
 	public List<String> getModuleIds ();
-	
-	public ServiceRegistry getServiceRegistry();
 }

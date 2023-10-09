@@ -22,13 +22,11 @@ package com.github.thmarx.modules.manager;
 
 import com.github.thmarx.modules.api.Context;
 import com.github.thmarx.modules.api.Module;
-import com.github.thmarx.modules.api.DefaultServiceRegistry;
 import com.github.thmarx.modules.api.ExtensionPoint;
 import com.github.thmarx.modules.api.ManagerConfiguration;
 import com.github.thmarx.modules.api.ModuleDescription;
 import com.github.thmarx.modules.api.ModuleLifeCycleExtension;
 import com.github.thmarx.modules.api.ModuleManager;
-import com.github.thmarx.modules.api.ServiceRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,10 +57,10 @@ public class ModuleManagerImpl implements ModuleManager {
 	protected static final String MODULE_CONFIGURATION_FILE = "moduleconfiguration.json";
 	
 	public static class Builder {
-		private File path = null;
+		private File modulesPath = null;
+		private File modulesDataPath = null;
 		private Context context = null;
 		private ModuleAPIClassLoader classLoader = null;
-		private ServiceRegistry serviceRegistry = null;
 		private ModuleInjector injector = null;
 		
 		
@@ -71,8 +69,13 @@ public class ModuleManagerImpl implements ModuleManager {
 			return new ModuleManagerImpl(this);
 		}
 
-		public Builder setPath(File path) {
-			this.path = path;
+		public Builder setModulesPath(File path) {
+			this.modulesPath = path;
+			return this;
+		}
+		
+		public Builder setModulesDataPath(File path) {
+			this.modulesDataPath = path;
 			return this;
 		}
 
@@ -83,11 +86,6 @@ public class ModuleManagerImpl implements ModuleManager {
 
 		public Builder setClassLoader(ModuleAPIClassLoader classLoader) {
 			this.classLoader = classLoader;
-			return this;
-		}
-
-		public Builder setServiceRegistry(ServiceRegistry serviceRegistry) {
-			this.serviceRegistry = serviceRegistry;
 			return this;
 		}
 
@@ -105,17 +103,17 @@ public class ModuleManagerImpl implements ModuleManager {
 	/**
 	 * Creates a new ModuleManager instance.
 	 *
-	 * @param path the path where the installed modules and the modules data
-	 * directory is located.
+	 * @param modulesPath Path where the modules are stored
+	 * @param modulesDataPath Path, where the modules data is stored
 	 * @param context the context
 	 * @return A new ModuleManager.
 	 */
-	public static ModuleManager create(final File path, final Context context) {
-		return builder().setClassLoader(new ModuleAPIClassLoader((URLClassLoader) ModuleManagerImpl.class.getClassLoader(), Collections.EMPTY_LIST)).setPath(path).setContext(context).setInjector(null).build();
+	public static ModuleManager create(final File modulesPath, final File modulesDataPath, final Context context) {
+		return create(modulesPath, modulesDataPath, context, new ModuleAPIClassLoader(ModuleManagerImpl.class.getClassLoader(), Collections.EMPTY_LIST));
 	}
 
 	/**
-	 * Creates a ne ModuleManager instance.
+	 * Creates a new ModuleManager instance.
 	 *
 	 * @param path the path where the installed modules and the modules data
 	 * directory is located.
@@ -123,8 +121,8 @@ public class ModuleManagerImpl implements ModuleManager {
 	 * @param classLoader the classloader
 	 * @return
 	 */
-	public static ModuleManager create(final File path, final Context context, final ModuleAPIClassLoader classLoader) {
-		return builder().setClassLoader(classLoader).setPath(path).setContext(context).setInjector(null).build();
+	public static ModuleManager create(final File modulesPath, final File modulesDataPath, final Context context, final ModuleAPIClassLoader classLoader) {
+		return create(modulesPath, modulesDataPath, context, classLoader, null);
 	}
 
 	/**
@@ -136,8 +134,8 @@ public class ModuleManagerImpl implements ModuleManager {
 	 * @param injector Injector for dependency injection
 	 * @return A new ModuleManager.
 	 */
-	public static ModuleManager create(final File path, final Context context, final ModuleInjector injector) {
-		return builder().setClassLoader(new ModuleAPIClassLoader((URLClassLoader) ModuleManagerImpl.class.getClassLoader(), Collections.EMPTY_LIST)).setPath(path).setContext(context).setInjector(injector).build();
+	public static ModuleManager create(final File modulesPath, final File modulesDataPath, final Context context, final ModuleInjector injector) {
+		return create(modulesPath, modulesDataPath, context, new ModuleAPIClassLoader(ModuleManagerImpl.class.getClassLoader(), Collections.EMPTY_LIST), injector);
 	}
 
 	/**
@@ -150,11 +148,15 @@ public class ModuleManagerImpl implements ModuleManager {
 	 * @param injector Injector for dependency injection
 	 * @return
 	 */
-	public static ModuleManager create(final File path, final Context context, final ModuleAPIClassLoader classLoader, final ModuleInjector injector) {
-		return builder().setClassLoader(classLoader).setPath(path).setContext(context).setInjector(injector).build();
+	public static ModuleManager create(final File modulesPath, final File modulesDataPath, final Context context, final ModuleAPIClassLoader classLoader, final ModuleInjector injector) {
+		return builder().setClassLoader(classLoader)
+				.setModulesPath(modulesPath)
+				.setModulesDataPath(modulesDataPath)
+				.setContext(context).setInjector(injector).build();
 	}
 
-	final File path;
+	final File modulesPath;
+	final File modulesDataPath;
 
 	final ModuleLoader moduleLoader;
 
@@ -167,7 +169,8 @@ public class ModuleManagerImpl implements ModuleManager {
 	final ModuleInjector injector;
 
 	public ModuleManagerImpl() {
-		this.path = null;
+		this.modulesDataPath = null;
+		this.modulesPath = null;
 		this.globalClassLoader = null;
 		this.moduleLoader = null;
 		this.context = null;
@@ -175,27 +178,22 @@ public class ModuleManagerImpl implements ModuleManager {
 	}
 
 	private ModuleManagerImpl(final Builder builder) {
-		this.path = builder.path;
+		this.modulesPath = builder.modulesPath;
+		this.modulesDataPath = builder.modulesDataPath;
 		this.context = builder.context;
 		this.injector = builder.injector;
 
-		if (builder.serviceRegistry != null) {
-			this.context.setServices(builder.serviceRegistry);
-		} else {
-			this.context.setServices(new DefaultServiceRegistry());
-		}
-		
-		File config = new File(path, MODULE_CONFIGURATION_FILE);
+		File config = new File(modulesDataPath, MODULE_CONFIGURATION_FILE);
 		if (config.exists()) {
 			this.configuration = ManagerConfiguration.load(config);
 		} else {
 			this.configuration = new ManagerConfiguration();
 		}
 		this.globalClassLoader = builder.classLoader;
-		this.moduleLoader = new ModuleLoader(configuration, path, this.globalClassLoader, this.context, this.injector);
+		this.moduleLoader = new ModuleLoader(configuration, modulesPath, this.globalClassLoader, this.context, this.injector);
 
-		File[] moduleFiles = new File(path, "modules").listFiles((File file) -> file.isDirectory());
-		File moduleData = new File(path, "modules_data");
+		File[] moduleFiles = new File(modulesPath, "modules").listFiles((File file) -> file.isDirectory());
+		File moduleData = new File(modulesDataPath, "modules_data");
 
 		Set<String> allUsedModuleIDs = new HashSet<>();
 
@@ -236,10 +234,6 @@ public class ModuleManagerImpl implements ModuleManager {
 			}
 		});
 		saveConfiguration();
-	}
-
-	public ServiceRegistry getServiceRegistry() {
-		return context.serviceRegistry();
 	}
 
 	private void activateActiveModulesByPriority(final ModuleImpl.Priority priority) {
@@ -283,7 +277,7 @@ public class ModuleManagerImpl implements ModuleManager {
 	}
 
 	private void saveConfiguration() {
-		File config = new File(path, MODULE_CONFIGURATION_FILE);
+		File config = new File(modulesDataPath, MODULE_CONFIGURATION_FILE);
 		ManagerConfiguration.store(config, this.configuration);
 	}
 
@@ -305,8 +299,8 @@ public class ModuleManagerImpl implements ModuleManager {
 
 		return modules.stream().map((mc) -> {
 			try {
-				File moduleDir = new File(path, "modules/" + configuration.get(mc.getId()).getModuleDir());
-				File moduleData = new File(path, "modules_data");
+				File moduleDir = new File(modulesPath, "modules/" + configuration.get(mc.getId()).getModuleDir());
+				File moduleData = new File(modulesDataPath, "modules_data");
 				ModuleImpl module = new ModuleImpl(moduleDir, moduleData, this.context, this.injector);
 				return module;
 			} catch (IOException ex) {
@@ -329,7 +323,7 @@ public class ModuleManagerImpl implements ModuleManager {
 			module = moduleLoader.activeModules.get(id);
 		} else {
 			ManagerConfiguration.ModuleConfig mc = configuration.get(id);
-			File moduleDir = new File(path, "modules/" + configuration.get(mc.getId()).getModuleDir());
+			File moduleDir = new File(modulesPath, "modules/" + configuration.get(mc.getId()).getModuleDir());
 			module = new ModuleImpl(moduleDir, null, this.context, this.injector);
 		}
 
@@ -397,14 +391,14 @@ public class ModuleManagerImpl implements ModuleManager {
 
 		Path tempDirectory = Files.createTempDirectory("modules");
 		File moduleTempDir = ModulePacker.unpackArchive(new File(moduleURI), tempDirectory.toFile());
-		File moduleData = new File(path, "modules_data");
+		File moduleData = new File(modulesDataPath, "modules_data");
 		ModuleImpl tempModule = new ModuleImpl(moduleTempDir, moduleData, this.context, this.injector);
 		if (getModuleIds().contains(tempModule.getId())) {
 			deactivateModule(tempModule.getId());
 			uninstallModule(tempModule.getId(), false);
 		}
-		ModulePacker.moveDirectoy(moduleTempDir, new File(this.path, "modules/" + moduleTempDir.getName()));
-		File moduleDir = new File(this.path, "modules/" + moduleTempDir.getName());
+		ModulePacker.moveDirectoy(moduleTempDir, new File(this.modulesPath, "modules/" + moduleTempDir.getName()));
+		File moduleDir = new File(this.modulesPath, "modules/" + moduleTempDir.getName());
 
 		ModuleImpl module = new ModuleImpl(moduleDir, moduleData, this.context, this.injector);
 
@@ -439,9 +433,9 @@ public class ModuleManagerImpl implements ModuleManager {
 		configuration.remove(moduleId);
 		saveConfiguration();
 
-		boolean deleted = ModulePacker.deleteDirectory(new File(path, "modules/" + moduleId));
+		boolean deleted = ModulePacker.deleteDirectory(new File(modulesPath, "modules/" + moduleId));
 
-		File moduleData = new File(path, "modules_data/" + moduleId);
+		File moduleData = new File(modulesDataPath, "modules_data/" + moduleId);
 		if (deleteData && deleted && moduleData.exists()) {
 			deleted = ModulePacker.deleteDirectory(moduleData);
 		}

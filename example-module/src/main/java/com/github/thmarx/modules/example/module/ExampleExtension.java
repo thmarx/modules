@@ -1,8 +1,12 @@
-package com.github.thmarx.modules.api.services;
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ */
+
+package com.github.thmarx.modules.example.module;
 
 /*-
  * #%L
- * modules-api
+ * example-module
  * %%
  * Copyright (C) 2023 Thorsten Marx
  * %%
@@ -20,17 +24,24 @@ package com.github.thmarx.modules.api.services;
  * #L%
  */
 
-
+import com.github.thmarx.modules.api.annotation.Extension;
+import com.github.thmarx.modules.example.api.GetStringExtensionPoint;
 
 /**
  *
- * @author marx
+ * @author t.marx
  */
-public class SimpleImple2 implements SimpleService {
+@Extension(GetStringExtensionPoint.class)
+public class ExampleExtension extends GetStringExtensionPoint {
 
 	@Override
-	public String getName() {
-		return "another simple imple";
+	public String getString() {
+		return "a string";
 	}
-	
+
+	@Override
+	public void init() {
+		
+	}
+
 }
