@@ -36,8 +36,6 @@ import java.util.List;
  */
 public class ModuledFirstURLClassLoader extends URLClassLoader {
 
-	private ClassLoader system;
-
 	public ModuledFirstURLClassLoader(URL[] classpath, ClassLoader parent) {
 		super(classpath, parent);
 	}
@@ -48,13 +46,7 @@ public class ModuledFirstURLClassLoader extends URLClassLoader {
 		// First, check if the class has already been loaded
 		Class<?> c = findLoadedClass(name);
 		if (c == null) {
-			if (system != null) {
-				try {
-					// checking system: jvm classes, endorsed, cmd classpath, etc.
-					c = system.loadClass(name);
-				} catch (ClassNotFoundException ignored) {
-				}
-			}
+			
 			if (c == null) {
 				try {
 					// checking local
@@ -75,9 +67,6 @@ public class ModuledFirstURLClassLoader extends URLClassLoader {
 	@Override
 	public URL getResource(String name) {
 		URL url = null;
-		if (system != null) {
-			url = system.getResource(name);
-		}
 		if (url == null) {
 			url = findResource(name);
 			if (url == null) {
@@ -94,21 +83,12 @@ public class ModuledFirstURLClassLoader extends URLClassLoader {
 		 * Similar to super, but local resources are enumerated before parent
 		 * resources
 		 */
-		Enumeration<URL> systemUrls = null;
-		if (system != null) {
-			systemUrls = system.getResources(name);
-		}
 		Enumeration<URL> localUrls = findResources(name);
 		Enumeration<URL> parentUrls = null;
 		if (getParent() != null) {
 			parentUrls = getParent().getResources(name);
 		}
 		final List<URL> urls = new ArrayList<>();
-		if (systemUrls != null) {
-			while (systemUrls.hasMoreElements()) {
-				urls.add(systemUrls.nextElement());
-			}
-		}
 		if (localUrls != null) {
 			while (localUrls.hasMoreElements()) {
 				urls.add(localUrls.nextElement());
