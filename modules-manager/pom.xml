@@ -11,7 +11,7 @@
     
 	<dependencies>
 		<dependency>
-			<groupId>de.marx_software.cms.headless.modules</groupId>
+			<groupId>com.github.thmarx.modules</groupId>
 			<artifactId>modules-api</artifactId>
 		</dependency>
 	</dependencies>
