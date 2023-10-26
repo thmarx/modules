@@ -190,10 +190,10 @@ public class ModuleManagerImpl implements ModuleManager {
 			this.configuration = new ManagerConfiguration();
 		}
 		this.globalClassLoader = builder.classLoader;
-		this.moduleLoader = new ModuleLoader(configuration, modulesPath, this.globalClassLoader, this.context, this.injector);
+		this.moduleLoader = new ModuleLoader(configuration, modulesPath, modulesDataPath, this.globalClassLoader, this.context, this.injector);
 
-		File[] moduleFiles = new File(modulesPath, "modules").listFiles((File file) -> file.isDirectory());
-		File moduleData = new File(modulesDataPath, "modules_data");
+		File[] moduleFiles = modulesPath.listFiles((File file) -> file.isDirectory());
+		File moduleData = modulesDataPath;
 
 		Set<String> allUsedModuleIDs = new HashSet<>();
 
@@ -299,8 +299,8 @@ public class ModuleManagerImpl implements ModuleManager {
 
 		return modules.stream().map((mc) -> {
 			try {
-				File moduleDir = new File(modulesPath, "modules/" + configuration.get(mc.getId()).getModuleDir());
-				File moduleData = new File(modulesDataPath, "modules_data");
+				File moduleDir = new File(modulesPath, configuration.get(mc.getId()).getModuleDir());
+				File moduleData = modulesDataPath;
 				ModuleImpl module = new ModuleImpl(moduleDir, moduleData, this.context, this.injector);
 				return module;
 			} catch (IOException ex) {
@@ -323,7 +323,7 @@ public class ModuleManagerImpl implements ModuleManager {
 			module = moduleLoader.activeModules.get(id);
 		} else {
 			ManagerConfiguration.ModuleConfig mc = configuration.get(id);
-			File moduleDir = new File(modulesPath, "modules/" + configuration.get(mc.getId()).getModuleDir());
+			File moduleDir = new File(modulesPath, configuration.get(mc.getId()).getModuleDir());
 			module = new ModuleImpl(moduleDir, null, this.context, this.injector);
 		}
 
@@ -391,14 +391,14 @@ public class ModuleManagerImpl implements ModuleManager {
 
 		Path tempDirectory = Files.createTempDirectory("modules");
 		File moduleTempDir = ModulePacker.unpackArchive(new File(moduleURI), tempDirectory.toFile());
-		File moduleData = new File(modulesDataPath, "modules_data");
+		File moduleData = modulesDataPath;
 		ModuleImpl tempModule = new ModuleImpl(moduleTempDir, moduleData, this.context, this.injector);
 		if (getModuleIds().contains(tempModule.getId())) {
 			deactivateModule(tempModule.getId());
 			uninstallModule(tempModule.getId(), false);
 		}
-		ModulePacker.moveDirectoy(moduleTempDir, new File(this.modulesPath, "modules/" + moduleTempDir.getName()));
-		File moduleDir = new File(this.modulesPath, "modules/" + moduleTempDir.getName());
+		ModulePacker.moveDirectoy(moduleTempDir, new File(this.modulesPath, moduleTempDir.getName()));
+		File moduleDir = new File(this.modulesPath, moduleTempDir.getName());
 
 		ModuleImpl module = new ModuleImpl(moduleDir, moduleData, this.context, this.injector);
 
@@ -433,9 +433,9 @@ public class ModuleManagerImpl implements ModuleManager {
 		configuration.remove(moduleId);
 		saveConfiguration();
 
-		boolean deleted = ModulePacker.deleteDirectory(new File(modulesPath, "modules/" + moduleId));
+		boolean deleted = ModulePacker.deleteDirectory(new File(modulesPath, moduleId));
 
-		File moduleData = new File(modulesDataPath, "modules_data/" + moduleId);
+		File moduleData = new File(modulesDataPath, moduleId);
 		if (deleteData && deleted && moduleData.exists()) {
 			deleted = ModulePacker.deleteDirectory(moduleData);
 		}

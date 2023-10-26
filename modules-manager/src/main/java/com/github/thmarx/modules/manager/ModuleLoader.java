@@ -41,16 +41,18 @@ public class ModuleLoader {
 
 	final Map<String, ModuleImpl> activeModules = new ConcurrentHashMap<>();
 
-	final File path;
+	final File modulesPath;
+	final File modulesDataPath;
 
 	final ClassLoader globalClassLoader;
 
 	final Context context;
 	final ModuleInjector injector;
 
-	protected ModuleLoader(final ManagerConfiguration configuration, final File path, final ClassLoader globalClassLoader, final Context context, final ModuleInjector injector) {
+	protected ModuleLoader(final ManagerConfiguration configuration, final File modulesPath, final File modulesDataPath, final ClassLoader globalClassLoader, final Context context, final ModuleInjector injector) {
 		this.configuration = configuration;
-		this.path = path;
+		this.modulesPath = modulesPath;
+		this.modulesDataPath = modulesDataPath;
 		this.globalClassLoader = globalClassLoader;
 		this.context = context;
 		this.injector = injector;
@@ -76,8 +78,8 @@ public class ModuleLoader {
 
 	protected boolean activateModule(final String moduleId) throws IOException {
 		
-		File moduleDir = new File(path, "modules/" + configuration.get(moduleId).getModuleDir());
-		File moduleData = new File(path, "modules_data");
+		File moduleDir = new File(modulesPath, configuration.get(moduleId).getModuleDir());
+		File moduleData = modulesDataPath;
 //		File moduleData = activeModules().get(moduleId).getModulesDataDir();
 
 		ModuleImpl module = new ModuleImpl(moduleDir, moduleData, this.context, this.injector);
