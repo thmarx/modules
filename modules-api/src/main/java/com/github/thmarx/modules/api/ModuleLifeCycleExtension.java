@@ -27,7 +27,7 @@ package com.github.thmarx.modules.api;
  *
  * @author marx
  */
-public abstract class ModuleLifeCycleExtension extends BaseExtension {
+public abstract class ModuleLifeCycleExtension<C extends Context> extends BaseExtension<C> {
 	/** 
 	 * Called when the module is activated.
 	 */
