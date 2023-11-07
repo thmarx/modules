@@ -48,6 +48,8 @@ public interface ModuleManager extends AutoCloseable {
 	 */
 	boolean deactivateModule(final String moduleId) throws IOException;
 
+	void initModules();
+	
 	/**
 	 * Returns the module description.
 	 * @param id

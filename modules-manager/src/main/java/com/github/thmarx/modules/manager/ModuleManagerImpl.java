@@ -19,7 +19,6 @@ package com.github.thmarx.modules.manager;
  * limitations under the License.
  * #L%
  */
-
 import com.github.thmarx.modules.api.Context;
 import com.github.thmarx.modules.api.Module;
 import com.github.thmarx.modules.api.ExtensionPoint;
@@ -35,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 
 import java.net.URI;
-import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -55,17 +53,22 @@ public class ModuleManagerImpl implements ModuleManager {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ModuleManagerImpl.class);
 
 	protected static final String MODULE_CONFIGURATION_FILE = "moduleconfiguration.json";
-	
+
 	public static class Builder {
+
 		private File modulesPath = null;
 		private File modulesDataPath = null;
 		private Context context = null;
 		private ModuleAPIClassLoader classLoader = null;
 		private ModuleInjector injector = null;
-		
-		
-		
-		public ModuleManager build () {
+		private boolean activateModulesOnStartup = false;
+
+		public Builder activateModulesOnStartup(boolean activate) {
+			this.activateModulesOnStartup = activate;
+			return this;
+		}
+
+		public ModuleManager build() {
 			return new ModuleManagerImpl(this);
 		}
 
@@ -73,7 +76,7 @@ public class ModuleManagerImpl implements ModuleManager {
 			this.modulesPath = path;
 			return this;
 		}
-		
+
 		public Builder setModulesDataPath(File path) {
 			this.modulesDataPath = path;
 			return this;
@@ -94,11 +97,10 @@ public class ModuleManagerImpl implements ModuleManager {
 			return this;
 		}
 	}
-	
-	public static Builder builder () {
+
+	public static Builder builder() {
 		return new Builder();
 	}
-	
 
 	/**
 	 * Creates a new ModuleManager instance.
@@ -115,8 +117,7 @@ public class ModuleManagerImpl implements ModuleManager {
 	/**
 	 * Creates a new ModuleManager instance.
 	 *
-	 * @param path the path where the installed modules and the modules data
-	 * directory is located.
+	 * @param path the path where the installed modules and the modules data directory is located.
 	 * @param context the context
 	 * @param classLoader the classloader
 	 * @return
@@ -128,8 +129,7 @@ public class ModuleManagerImpl implements ModuleManager {
 	/**
 	 * Creates a new ModuleManager instance.
 	 *
-	 * @param path the path where the installed modules and the modules data
-	 * directory is located.
+	 * @param path the path where the installed modules and the modules data directory is located.
 	 * @param context the context
 	 * @param injector Injector for dependency injection
 	 * @return A new ModuleManager.
@@ -141,8 +141,7 @@ public class ModuleManagerImpl implements ModuleManager {
 	/**
 	 * Creates a ne ModuleManager instance.
 	 *
-	 * @param path the path where the installed modules and the modules data
-	 * directory is located.
+	 * @param path the path where the installed modules and the modules data directory is located.
 	 * @param context the context
 	 * @param classLoader the classloader
 	 * @param injector Injector for dependency injection
@@ -205,6 +204,25 @@ public class ModuleManagerImpl implements ModuleManager {
 			configuration.remove(mc.getId());
 		});
 
+		if (builder.activateModulesOnStartup) {
+			initModules();
+		}
+
+	}
+
+	@Override
+	public void initModules() {
+		
+		File[] moduleFiles = modulesPath.listFiles((File file) -> file.isDirectory());
+		File moduleData = modulesDataPath;
+
+		Set<String> allUsedModuleIDs = new HashSet<>();
+
+		Map<String, ModuleImpl> modules = new HashMap<>();
+		if (moduleFiles != null) {
+			loadModules(moduleFiles, moduleData, allUsedModuleIDs, modules);
+		}
+		
 		List<ModuleImpl> moduleList = new ArrayList<>(modules.values());
 		moduleLoader.tryToLoadModules(moduleList);
 		for (ModuleImpl module : moduleList) {
@@ -233,6 +251,7 @@ public class ModuleManagerImpl implements ModuleManager {
 				configuration.get(mc.getId()).setActive(false);
 			}
 		});
+
 		saveConfiguration();
 	}
 
@@ -282,8 +301,7 @@ public class ModuleManagerImpl implements ModuleManager {
 	}
 
 	/**
-	 * Returns a module by id. All the modules are loaded correctly so you can
-	 * get extensions.
+	 * Returns a module by id. All the modules are loaded correctly so you can get extensions.
 	 *
 	 * @param id The id of the module.
 	 * @return The module for the given id or null.
@@ -338,8 +356,7 @@ public class ModuleManagerImpl implements ModuleManager {
 	 * activates a module.
 	 *
 	 * @param moduleId
-	 * @return returns true if the module is correctly or allready installed,
-	 * otherwise false
+	 * @return returns true if the module is correctly or allready installed, otherwise false
 	 * @throws java.io.IOException
 	 */
 	@Override
